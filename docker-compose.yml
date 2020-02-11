@@ -1,0 +1,13 @@
+version: "3.6"
+services:
+  db:
+    image: postgres:11.1
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=${DATABASE_NAME}
+    ports:
+      - "${DATABASE_PORT}:5432"
+  redis:
+    image: redis:3.2.12
+    ports:
+      - "${REDIS_PORT}:6379"
