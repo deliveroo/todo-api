@@ -110,3 +110,10 @@ func (s *Server) getTask(ctx context.Context, req *jsonrest.Request) (interface{
 	}
 	return s.Protocol().Task(t), nil
 }
+
+// markAllTasksComplete is POST /tasks/all/complete
+func (s *Server) markAllTasksComplete(ctx context.Context, req *jsonrest.Request) (interface{}, error) {
+	account := req.Get(requestAccountKey{}).(*domain.Account)
+	marked, err := s.Repo().MarkIncompleteTasksCompleteByAccountID(ctx, account.ID)
+	return s.Protocol().TasksAffected(marked), err
+}

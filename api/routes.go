@@ -28,11 +28,13 @@ func router(s *Server) *jsonrest.Router {
 		"GET  /account": s.getAccount,
 
 		// Tasks
-		"GET    /tasks":     s.getAllTasks,
-		"DELETE /tasks/:id": s.deleteTask,
-		"GET    /tasks/:id": s.getTask,
-		"PUT    /tasks/:id": s.updateTask,
-		"POST   /tasks":     s.createTask,
+
+		"POST   /tasks/all/complete": s.markAllTasksComplete,
+		"GET    /tasks":              s.getAllTasks,
+		"DELETE /tasks/:id":          s.deleteTask,
+		"GET    /tasks/:id":          s.getTask,
+		"PUT    /tasks/:id":          s.updateTask,
+		"POST   /tasks":              s.createTask,
 	})
 
 	return r

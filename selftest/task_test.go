@@ -50,6 +50,40 @@ func TestCreateGetUpdateDeleteTask(t *testing.T) {
 	})
 }
 
+func TestMarkAllComplete(t *testing.T) {
+	withAccount(t, func(api *API) {
+		t.Run("create 10 tasks", func(t *testing.T) {
+			for i := 1; i <= 10; i++ {
+				description := fmt.Sprintf("task %d", i)
+				resp := api.Post(t, "/tasks", m{
+					"description": description,
+				})
+				resp.AssertStatusCode(t, 200)
+			}
+		})
+		t.Run("mark all complete", func(t *testing.T) {
+			{
+				resp := api.Post(t, "/tasks/all/complete", nil)
+				resp.AssertStatusCode(t, 200)
+				resp.JSONPathEqual(t, "updated", float64(10))
+			}
+			{
+				resp := api.Get(t, "/tasks")
+				resp.AssertStatusCode(t, 200)
+				type task struct {
+					Completed *string `json:"completed"`
+				}
+				var tasks []task
+				resp.BindBody(t, &tasks)
+				assert.Equal(t, len(tasks), 10)
+				for _, tt := range tasks {
+					assert.NotNil(t, tt.Completed)
+				}
+			}
+		})
+	})
+}
+
 func TestTaskValidation(t *testing.T) {
 	withAccount(t, func(api *API) {
 		resp := api.Post(t, "/tasks", m{

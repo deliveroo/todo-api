@@ -22,6 +22,10 @@ type Task struct {
 	Description string     `json:"description"`
 }
 
+type TasksAffected struct {
+	Updated int64 `json:"updated"`
+}
+
 type Account struct {
 	ID       int64  `json:"id"`
 	Username string `json:"username"`
@@ -59,4 +63,10 @@ func (p P) Tasks(vv []*domain.Task) []Task {
 		result = append(result, p.Task(v))
 	}
 	return result
+}
+
+func (p P) TasksAffected(v int64) TasksAffected {
+	return TasksAffected{
+		Updated: v,
+	}
 }
