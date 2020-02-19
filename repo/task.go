@@ -130,3 +130,35 @@ func (c *Client) GetAllTasksByAccountID(ctx context.Context, accountID int64) ([
 	}
 	return result, nil
 }
+
+// GetIncompleteTasksByAccountID fetches all incomplete tasks by account from
+// the database.
+func (c *Client) GetIncompleteTasksByAccountID(ctx context.Context, accountID int64) ([]*domain.Task, error) {
+	rows, err := c.query(ctx, `
+		SELECT id, account_id, description, created, completed
+		FROM tasks
+		WHERE account_id = $1
+		AND completed IS NULL
+		ORDER BY created DESC;
+	`, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []*domain.Task
+	for rows.Next() {
+		var t domain.Task
+		_ = rows.Scan(
+			&t.ID,
+			&t.AccountID,
+			&t.Description,
+			&t.Created,
+			&t.Completed,
+		)
+		result = append(result, &t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}

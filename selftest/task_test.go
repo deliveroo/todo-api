@@ -91,3 +91,36 @@ func TestGetAllTasks(t *testing.T) {
 		})
 	})
 }
+
+func TestGetIncompleteTasks(t *testing.T) {
+	withAccount(t, func(api *API) {
+		t.Run("create 10 tasks", func(t *testing.T) {
+			for i := 1; i <= 10; i++ {
+				var completed *string
+				if i%2 == 0 {
+					now := time.Now().UTC().Format(time.RFC3339)
+					completed = &now
+				}
+				description := fmt.Sprintf("task %d", i)
+				resp := api.Post(t, "/tasks", m{
+					"description": description,
+					"completed":   completed,
+				})
+				resp.AssertStatusCode(t, 200)
+			}
+		})
+		t.Run("get all incomplete", func(t *testing.T) {
+			resp := api.Get(t, "/tasks?filter=incomplete")
+			resp.AssertStatusCode(t, 200)
+			type task struct {
+				Completed *string `json:"completed"`
+			}
+			var tasks []task
+			resp.BindBody(t, &tasks)
+			assert.Equal(t, len(tasks), 5)
+			for _, tt := range tasks {
+				assert.Nil(t, tt.Completed)
+			}
+		})
+	})
+}

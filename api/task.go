@@ -90,7 +90,13 @@ func (s *Server) deleteTask(ctx context.Context, req *jsonrest.Request) (interfa
 // getTasks is GET /tasks
 func (s *Server) getAllTasks(ctx context.Context, req *jsonrest.Request) (interface{}, error) {
 	account := req.Get(requestAccountKey{}).(*domain.Account)
-	tasks, err := s.Repo().GetAllTasksByAccountID(ctx, account.ID)
+	var tasks []*domain.Task
+	var err error
+	if req.Query("filter") == "incomplete" {
+		tasks, err = s.Repo().GetIncompleteTasksByAccountID(ctx, account.ID)
+	} else {
+		tasks, err = s.Repo().GetAllTasksByAccountID(ctx, account.ID)
+	}
 	if err != nil {
 		return nil, err
 	}
