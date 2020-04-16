@@ -29,6 +29,10 @@ func TestMain(m *testing.M) {
 	// Connect to Redis.
 	must(redis.Connect(), "could not connect to redis")
 
+	// Reset the databases.
+	must(postgres.Reset(), "error resetting database")
+	must(redis.Reset(), "error resettiig redis")
+
 	var addr string
 	addr, url = tempAddr()
 
@@ -53,10 +57,6 @@ func TestMain(m *testing.M) {
 
 	// Run tests.
 	result := m.Run()
-
-	// Reset the databases.
-	must(postgres.Reset(), "error resetting database")
-	must(redis.Reset(), "error resettiig redis")
 
 	// Shutdown services.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
