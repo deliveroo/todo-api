@@ -1,13 +1,28 @@
+# GLOBAL-ANCHORS - DockerHub Authentication changes applied - PROD-1431 / PROD-1435
+global_dockerhub_login: &global_dockerhub_login
+  run:
+    name: Authenticate with hub.docker.com - DockerHub
+    command: docker login -u $GLOBAL_DOCKERHUB_USERNAME -p $GLOBAL_DOCKERHUB_PASSWORD
+global_context: &global_context
+  context:
+    - org-global
+global_remote_docker: &global_remote_docker
+  version: 19.03.13
+global_dockerhub_auth: &global_dockerhub_auth
+  auth:
+    username: $GLOBAL_DOCKERHUB_USERNAME
+    password: $GLOBAL_DOCKERHUB_PASSWORD
 version: 2
-
 jobs:
   lint:
     docker:
       - image: circleci/golang:1.13.6
-
+        <<: *global_dockerhub_auth
     steps:
+      - *global_dockerhub_login
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          <<: *global_remote_docker
       - run:
           name: Install golangci-lint
           command: GOBIN=$(pwd)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint
@@ -17,56 +32,54 @@ jobs:
   test:
     docker:
       - image: circleci/golang:1.13.6
+        <<: *global_dockerhub_auth
       - image: postgres:11.1
+        <<: *global_dockerhub_auth
         environment:
           - POSTGRES_USER=postgres
           - POSTGRES_DB=todo_api_test
           - PGPASSWORD=secret
           - PGUSER=postgres
       - image: redis:3.2.12
-
+        <<: *global_dockerhub_auth
     environment:
       TEST_RESULTS: /tmp/test-results
       TODO_API_TEST_DATABASE_URL: postgres://postgres:secret@127.0.0.1:5432/todo_api_test
       TODO_API_TEST_REDIS_URL: redis://127.0.0.1:6379
-
     steps:
+      - *global_dockerhub_login
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          <<: *global_remote_docker
       - run: sudo apt-get update -y
       - run: sudo apt-get install -y postgresql-client
-
       - run:
           name: Import database schema
           command: psql -f schema.sql $TODO_API_TEST_DATABASE_URL -v ON_ERROR_STOP=1
-
       - run:
           name: Setup test environment
           command: |
             mkdir -p $TEST_RESULTS
             GOBIN=$(pwd)/bin go install github.com/jstemmer/go-junit-report
             GOBIN=$(pwd)/bin go install github.com/johngibb/migrate/cmd/migrate
-
       - run:
           name: Run tests
           command: |
             trap "./bin/go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
             go test -v ./... | tee ${TEST_RESULTS}/go-test.out
-
       # CircleCI didn't migrate environment variable support for `path` in
       # version 2.0:
       # https://discuss.circleci.com/t/using-environment-variables-in-config-yml-not-working/14237/20
       - store_artifacts:
           path: /tmp/test-results
           destination: raw-test-output
-
       - store_test_results:
           path: /tmp/test-results
-
 workflows:
   version: 2
-
   build_and_push:
     jobs:
-      - lint
-      - test
+      - lint:
+          <<: *global_context
+      - test:
+          <<: *global_context
